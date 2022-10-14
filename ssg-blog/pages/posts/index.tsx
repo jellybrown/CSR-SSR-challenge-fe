@@ -1,19 +1,27 @@
 import React from 'react';
-import fs from 'fs';
-import { join } from 'path';
-import { GetStaticProps } from 'next';
-import { MarkdonwRenderingResult } from 'lib';
 import { useRouter } from 'next/router';
+import useSWR from 'swr';
+import fetcher from 'pages/api/fecher';
 
-const Post = ({ postTitles }: { postTitles: string[] }) => {
+type Post = {
+  title: string;
+  content: string;
+};
+
+const Post = () => {
+  const { data, error } = useSWR('/api/posts', fetcher);
+
   const router = useRouter();
   const handleClick = (title: string) => {
     router.push(`posts/${title}`);
   };
 
+  if (error) return <div>failed to load</div>;
+  if (!data) return <div>loading...</div>;
+
   return (
     <div>
-      {postTitles.map((title) => (
+      {data?.titles.map((title: string) => (
         <a
           style={{ cursor: 'pointer' }}
           key={title}
@@ -24,22 +32,6 @@ const Post = ({ postTitles }: { postTitles: string[] }) => {
       ))}
     </div>
   );
-};
-
-const POSTS_PATH = join(process.cwd(), '__posts');
-
-export const getStaticProps: GetStaticProps<{
-  postTitles: string[];
-}> = async () => {
-  const titles = fs
-    .readdirSync(POSTS_PATH)
-    .map((path) => path.replace(/\.md$/, ''));
-
-  return {
-    props: {
-      postTitles: titles,
-    },
-  };
 };
 
 export default Post;
